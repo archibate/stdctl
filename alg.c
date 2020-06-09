@@ -22,7 +22,7 @@ int search_by_xm(Table *tab, const char *xm)
 
 void table_modify_student(Table *tab, int i, Student *stu)
 {
-  memcpy(&tab->s[tab->len], stu, sizeof(Student));
+  memcpy(&tab->s[i], stu, sizeof(Student));
 }
 
 void table_add_student(Table *tab, Student *stu)

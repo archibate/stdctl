@@ -44,7 +44,7 @@ static void show_main_hint(void)
   printf("2: 按姓名查找\n\t");
   printf("3: 打印全部学生\t");
   printf("4: 进行数据排序\t");
-  printf("5: 显示成绩统计\n\t");
+  printf("5: 显示统计信息\n\t");
   printf("q: 保存并退出\n\t");
   printf("\n");
   print_table(tab);
@@ -218,14 +218,24 @@ static void run_main_command(int c)
 int main(void)
 {
   int c;
+  char fname[233];
+
 #ifndef _WIN32
   setbuf(stdout, NULL);
   setbuf(stdin, NULL);
 #endif
 
-  tab = load_table("table.txt");
-  if (tab == NULL)
+  printf("=== 载入数据 ===\n");
+  printf("请输入数据文件名：");
+  scanf("%s", fname);
+  getchar(); // 防止多余的'\n'漏到getch里
+  printf("载入中...\n");
+  tab = load_table(fname);
+  if (tab == NULL) {
+    printf("载入失败，请检查文件是否存在\n");
     return -1;
+  }
+  strcpy(statbar, "载入成功");
 
   while (!over) {
     show_main_hint();
