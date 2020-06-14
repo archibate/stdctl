@@ -25,3 +25,18 @@ Table *load_table(const char *filename)
   fclose(fp);
   return tab;
 }
+
+Table *alloc_table(void)
+{
+  Table *tab;
+  tab = malloc(sizeof(Table));
+  tab->len = 0;
+  tab->s = calloc(sizeof(Student), 1);
+  return tab;
+}
+
+void free_table(Table *tab)
+{
+  free(tab->s);
+  free(tab);
+}

@@ -1,5 +1,5 @@
 #define _DEBUG
-#define PGSIZE 20
+#define PGSIZE 10
 #include "stdctl.h"
 #ifdef _WIN32
 #include <conio.h>
@@ -47,6 +47,8 @@ static void show_main_hint(void)
   printf("3: 查看全部学生\t");
   printf("4: 进行数据排序\t");
   printf("5: 显示统计信息\n\t");
+  printf("6: 成绩范围查找\t");
+  printf("7: 姓名模糊查找\t");
   printf("q: 保存并退出\n\t");
   printf("\n");
   printf("%s\n", statbar);
@@ -71,23 +73,28 @@ void print_student(Student *stu)
       stu->xh, xb_t[stu->xb], stu->xm, stu->cj);
 }
 
-void run_print_table(void)
+void print_table(Table *tab)
 {
-  int i, c, r;
+  int i, c, r, pages;
+  if (tab->len == 0) {
+    strcpy(statbar, "没有结果！");
+    return;
+  }
   clear();
   print_tab_head();
+  pages = (tab->len + PGSIZE - 1) / PGSIZE;
   for (i = 0; i < tab->len; i++) {
     print_student(&tab->s[i]);
-    if (i % PGSIZE == PGSIZE - 1) {
+    if (i % PGSIZE == PGSIZE - 1 || i == tab->len - 1) {
       print_tab_tail();
       printf("第%d/%d页：上/下翻页(k/j)，"
-          "输入数字快速跳转，退出(q)..", i / 20 + 1,
-          (tab->len + PGSIZE - 1) / PGSIZE);
+          "输入数字快速跳转，退出(q)..", i / PGSIZE + 1, pages);
       c = getch();
       switch (c) {
       case 'k':
         // 多减1可以抵消for里的i++
-        i -= PGSIZE * 2;
+        i -= i % PGSIZE;
+        i -= PGSIZE + 1;
         if (i < -1)
           i = -1;
       case 'j':
@@ -97,7 +104,7 @@ void run_print_table(void)
         return;
       default:
         if (isdigit(c)) {
-          printf("\n快速跳转至：%c", c);
+          printf("\n快速跳转至哪一页？%c", c);
           r = c - '0';
           while (isdigit(c = getch())) {
             printf("%c", c);
@@ -106,10 +113,10 @@ void run_print_table(void)
           }
           r = (r - 1) * PGSIZE;
           if (r < 0 || r >= tab->len) {
-            printf("\t页码错误！请输入1~%d", tab->len);
+            printf("\t页码错误！请输入1~%d！", pages);
             getch();
           } else {
-            i = r;
+            i = r - 1; // 减1抵消for里的i++
           }
         }
       }
@@ -120,7 +127,7 @@ void run_print_table(void)
   print_tab_tail();
 }
 
-int run_init_student(Student *stu)
+static int run_init_student(Student *stu)
 {
   printf("请输入学号：");
   scanf("%d", &stu->xh);
@@ -150,7 +157,7 @@ invalid:
 static void run_new_student(void)
 {
   Student stu;
-  printf("\r=== 录入新学生 === \n");
+  printf("\r=== 录入新学生 ===\n");
   if (!run_init_student(&stu))
     return;
   print_tab_head();
@@ -209,6 +216,7 @@ static void run_search_result(int i)
       strcpy(statbar, "删除未确认");
       break;
     }
+    table_delete_student(tab, i);
     strcpy(statbar, "删除成功");
     break;
   default:
@@ -239,6 +247,69 @@ static void run_search_by_xm(void)
   run_search_result(i);
 }
 
+static void print_statics(Table *tab)
+{
+  Student *s;
+  int i, tmp;
+  struct {
+    float cj, hg;
+    int n;
+  } sum[3], *p;
+  memset(sum, 0, sizeof(sum));
+  for (i = 0; i < tab->len; i++) {
+    s = &tab->s[i];
+    p = &sum[!!s->xb];
+    p->cj += s->cj;
+    p->hg += s->cj >= 60;
+    p->n++;
+  }
+  sum[2].cj = sum[0].cj + sum[1].cj;
+  sum[2].hg = sum[0].hg + sum[1].hg;
+  sum[2].n = sum[0].n + sum[1].n;
+  for (i = 0; i < 3; i++) {
+    sum[i].cj /= sum[i].n;
+    sum[i].hg *= 100.0 / sum[i].n;
+  }
+  printf("+----------+--------+--------+--------+\n");
+  printf("|   项目   |  男生  |  女生  |  总计  |\n");
+  printf("+----------+--------+--------+--------+\n");
+  printf("| 平均成绩 | %6.2f | %6.2f | %6.2f |\n",
+      sum[0].cj, sum[1].cj, sum[2].cj);
+  printf("| 合格率 % | %6.2f | %6.2f | %6.2f |\n",
+      sum[0].hg, sum[1].hg, sum[2].hg);
+  printf("+----------+--------+--------+--------+\n");
+  printf("按任意键继续...");
+  getch();
+}
+
+static void run_search_by_cj_range(void)
+{
+  Table *res;
+  int cmax, cmin;
+  printf("输入成绩下限：");
+  scanf("%d", &cmin);
+  printf("输入成绩上限：");
+  scanf("%d", &cmax);
+  getchar(); // 防止多余enter传给getch
+  clear();
+  res = search_by_cj_range(tab, cmin, cmax);
+  print_table(res);
+  free_table(res);
+}
+
+static void run_search_partial_xm(void)
+{
+  Table *res;
+  char xm[10];
+  printf("输入部分姓名：");
+  scanf("%s", xm);
+  getchar(); // 防止多余enter传给getch
+  clear();
+  res = search_partial_xm(tab, xm);
+  print_table(res);
+  free_table(res);
+}
+
 static void run_main_command(int c)
 {
   switch (c) {
@@ -252,7 +323,16 @@ static void run_main_command(int c)
     run_search_by_xm();
     break;
   case '3':
-    run_print_table();
+    print_table(tab);
+    break;
+  case '5':
+    print_statics(tab);
+    break;
+  case '6':
+    run_search_by_cj_range();
+    break;
+  case '7':
+    run_search_partial_xm();
     break;
   case 'q':
     over = 1;
