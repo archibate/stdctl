@@ -1,3 +1,5 @@
+#define _DEBUG
+#define PGSIZE 20
 #include "stdctl.h"
 #ifdef _WIN32
 #include <conio.h>
@@ -42,12 +44,11 @@ static void show_main_hint(void)
   printf("0: 录入新学生\t");
   printf("1: 按学号查找\t");
   printf("2: 按姓名查找\n\t");
-  printf("3: 打印全部学生\t");
+  printf("3: 查看全部学生\t");
   printf("4: 进行数据排序\t");
   printf("5: 显示统计信息\n\t");
   printf("q: 保存并退出\n\t");
   printf("\n");
-  print_table(tab);
   printf("%s\n", statbar);
 }
 
@@ -66,15 +67,55 @@ void print_tab_head(void)
 void print_student(Student *stu)
 {
   char xb_t[][6] = {" 男 ", " 女 "};
-  printf("| %4d | %s | %-8s | %4d |\n", stu->xh, xb_t[stu->xb], stu->xm, stu->cj);
+  printf("| %4d | %s | %-8s | %4d |\n",
+      stu->xh, xb_t[stu->xb], stu->xm, stu->cj);
 }
 
-void print_table(Table *tab)
+void run_print_table(void)
 {
-  int i;
+  int i, c, r;
+  clear();
   print_tab_head();
   for (i = 0; i < tab->len; i++) {
     print_student(&tab->s[i]);
+    if (i % PGSIZE == PGSIZE - 1) {
+      print_tab_tail();
+      printf("第%d/%d页：上/下翻页(k/j)，"
+          "输入数字快速跳转，退出(q)..", i / 20 + 1,
+          (tab->len + PGSIZE - 1) / PGSIZE);
+      c = getch();
+      switch (c) {
+      case 'k':
+        // 多减1可以抵消for里的i++
+        i -= PGSIZE * 2;
+        if (i < -1)
+          i = -1;
+      case 'j':
+        // 直接让for帮我i++就行了
+        break;
+      case 'q':
+        return;
+      default:
+        if (isdigit(c)) {
+          printf("\n快速跳转至：%c", c);
+          r = c - '0';
+          while (isdigit(c = getch())) {
+            printf("%c", c);
+            r *= 10;
+            r += c - '0';
+          }
+          r = (r - 1) * PGSIZE;
+          if (r < 0 || r >= tab->len) {
+            printf("\t页码错误！请输入1~%d", tab->len);
+            getch();
+          } else {
+            i = r;
+          }
+        }
+      }
+      clear();
+      print_tab_head();
+    }
   }
   print_tab_tail();
 }
@@ -210,6 +251,9 @@ static void run_main_command(int c)
   case '2':
     run_search_by_xm();
     break;
+  case '3':
+    run_print_table();
+    break;
   case 'q':
     over = 1;
   }
@@ -225,11 +269,15 @@ int main(void)
   setbuf(stdin, NULL);
 #endif
 
+#ifdef _DEBUG
+  strcpy(fname, "table.txt");
+#else
   printf("=== 载入数据 ===\n");
   printf("请输入数据文件名：");
   scanf("%s", fname);
   getchar(); // 防止多余的'\n'漏到getch里
   printf("载入中...\n");
+#endif
   tab = load_table(fname);
   if (tab == NULL) {
     printf("载入失败，请检查文件是否存在\n");

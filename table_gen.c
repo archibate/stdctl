@@ -21,7 +21,7 @@ void rand_xm(char xm[])
 
 int main(int argc, char **argv)
 {
-  int i, xb, cj, n = 40;
+  int i, xb, cj, n = argc > 1 ? atoi(argv[1]) : 40;
   char xm[9];
   printf("%d\n", n);
   for (i = 0; i < n; i++) {
