@@ -12,6 +12,13 @@ typedef struct _Student {
   char xm[9];
 } Student;
 
+typedef struct _StuKey {
+  int xh;
+  int xb;
+  int cj;
+  int xm;
+} StuKey;
+
 typedef struct _Table {
   int len;
   Student *s;
@@ -31,6 +38,7 @@ Table *search_partial_xm(Table *tab, const char *xm);
 void table_add_student(Table *tab, Student *stu);
 void table_modify_student(Table *tab, int i, Student *stu);
 void table_delete_student(Table *tab, int i);
+void sort_table(Table *tab, StuKey *k);
 
 ////////// main.c
 void print_tab_tail(void);

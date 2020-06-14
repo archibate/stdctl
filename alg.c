@@ -73,3 +73,32 @@ void table_add_student(Table *tab, Student *stu)
   tab->s = realloc(tab->s, ++tab->len * sizeof(Student));
   table_modify_student(tab, tab->len - 1, stu);
 }
+
+static int dotsub(Student *a, Student *b, StuKey *k)
+{
+  return (a->xh - b->xh) * k->xh + (a->xb - b->xb) * k->xb
+    + (a->cj - b->cj) * k->cj + strcmp(a->xm, b->xm) * k->xm;
+}
+
+void sort_table(Table *tab, StuKey *k)
+{
+  int i, j, a[tab->len], tmp;
+  Student ns[tab->len];
+  // 避免一次次memcpy大结构Student的常数开销
+  for (i = 0; i < tab->len; i++) {
+    a[i] = i;
+  }
+  memcpy(ns, tab->s, sizeof(Student) * tab->len);
+  for (i = 0; i < tab->len - 1; i++) {
+    for (j = 0; j < tab->len - 1 - i; j++) {
+      if (dotsub(&tab->s[a[j]], &tab->s[a[j + 1]], k) < 0) {
+        tmp = a[j];
+        a[j] = a[j + 1];
+        a[j + 1] = tmp;
+      }
+    }
+  }
+  for (int i = 0; i < tab->len; i++) {
+    memcpy(&tab->s[i], &ns[a[i]], sizeof(Student));
+  }
+}

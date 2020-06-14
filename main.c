@@ -1,4 +1,5 @@
 #define _DEBUG
+//#define _DEBUG_SORT
 #define PGSIZE 10
 #include "stdctl.h"
 #ifdef _WIN32
@@ -310,6 +311,27 @@ static void run_search_partial_xm(void)
   free_table(res);
 }
 
+static void run_sort_table(void)
+{
+  StuKey k;
+#ifdef _DEBUG_SORT
+  memset(&k, 0, sizeof(k));
+  k.xb = -100;
+  k.cj = 1;
+#else
+  printf("输入学号权重：");
+  scanf("%d", &k.xh);
+  printf("输入性别权重：");
+  scanf("%d", &k.xb);
+  printf("输入成绩权重：");
+  scanf("%d", &k.cj);
+  printf("输入姓名权重：");
+  scanf("%d", &k.xm);
+  getchar(); // 防止多余enter传给getch
+#endif
+  sort_table(tab, &k);
+}
+
 static void run_main_command(int c)
 {
   switch (c) {
@@ -324,6 +346,9 @@ static void run_main_command(int c)
     break;
   case '3':
     print_table(tab);
+    break;
+  case '4':
+    run_sort_table();
     break;
   case '5':
     print_statics(tab);
