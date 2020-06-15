@@ -330,6 +330,7 @@ static void run_sort_table(void)
   getchar(); // 防止多余enter传给getch
 #endif
   sort_table(tab, &k);
+  strcpy(statbar, "排序完毕！");
 }
 
 static void run_main_command(int c)
